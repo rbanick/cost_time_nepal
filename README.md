@@ -29,7 +29,7 @@ Command line GRASS unfortunately requires declaring quite a few variables ahead 
 
 The bash script assumes all files are in UTM 44N projection, EPSG:32644. This can be changed.
 
-The bash script assumes a PostgreSQL database with the PostGIS extension. Mine is named _poverty_analysis_ but another name can easily be substituted. The database should contain a WorldPop raster dataset named _wp_32644_ and an LGU dataset with population per LGU named _paulika_.
+The bash script assumes a PostgreSQL database with the PostGIS extension. Mine is named _poverty_analysis_ but another name can easily be substituted. The database should contain a WorldPop raster dataset named _wp_32644_ and an LGU dataset with population per LGU named _LGU_.
 
 #### R
 
