@@ -1,6 +1,6 @@
-# cost_time_nepal
+# Cost Time Analysis of Nepal
 
-A scripted routine for analyzing Cost Time accessibility rasters for Nepal. The script divides the rasters into zones, polygonizes them, aggregates the population for each and creates summary charts for every local government unit from the results.
+A scripted routine for analyzing Cost Time accessibility rasters for various facility types in Nepal. The script divides the rasters into zones, polygonizes them, aggregates the population for each and creates summary charts for every local government unit from the results.
 
 The script involves a lot of moving parts. This is because QGIS and ArcGIS both crashed on the Union and Dissolve operations, which involve huge datasets. Thus GRASS and PostGIS are required. My system Python is scrambled at the moment so command line was preferred, although I would like to developt this into a Python script in the future.
 
