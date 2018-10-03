@@ -7,7 +7,7 @@ echo $filename
 
 ### gdal steps
 
-python ~/git/gdal_reclassify/gdal_reclassify.py ${file%%.*}.tif ${file%%.*}_reclass.tif -c "<0, <1, <2, <4, <8, <16, <24, <36, <90" -r "0, 1, 2, 3, 4, 5, 6, 7, 8" -d 0 -n true -p "COMPRESS=LZW";
+python ~/git/gdal_reclassify/gdal_reclassify.py ${file%%.*}.tif ${file%%.*}_reclass.tif -c "<0, <0.501, <1.01, <2.01, <4.01, <8.01, <16.01, <32.01, <100" -r "0, 1, 2, 3, 4, 5, 6, 7, 8" -d 0 -n true -p "COMPRESS=LZW";
 
 echo "Reclassification complete"
 
@@ -43,9 +43,9 @@ export MANPATH=$MANPATH:$GISBASE/man
 
 grass74 ~/grassdata/test/PERMANENT --exec v.in.ogr input=${file%%.*}_cats.shp output=${file%%.*}_cats
 
-# grass74 ~/grassdata/test/PERMANENT --exec g.remove type=vector name=ct_nm_mkts_180824_cats -f
-
 grass74 ~/grassdata/test/PERMANENT --exec v.overlay ainput=adm2 binput=${file%%.*}_cats out=${file%%.*}_union operator=or
+
+# grass74 ~/grassdata/test/PERMANENT --exec g.remove type=vector name=${file%%.*}_cats -f
 
 grass74 ~/grassdata/test/PERMANENT --exec v.out.ogr input=${file%%.*}_union output=${file%%.*}_adm2.gpkg
 
@@ -101,19 +101,19 @@ UPDATE ${file%%.*}_adm2_dissolve SET adm_code=LEFT(dissolve,14);
 UPDATE ${file%%.*}_adm2_dissolve SET trav_value=CAST(RIGHT(dissolve,1) as INTEGER);
 UPDATE ${file%%.*}_adm2_dissolve SET adm_name=LGU.lu_name, adm_pop=LGU.sum FROM LGU WHERE ${file%%.*}_adm2_dissolve.adm_code = LGU.hlcit_code;
 UPDATE ${file%%.*}_adm2_dissolve SET trav_cat = CASE
-    WHEN trav_value = 1 THEN '0 to 1'
-    WHEN trav_value = 2 THEN '1 to 2'
-    WHEN trav_value = 3 THEN '2 to 4'
-    WHEN trav_value = 4 THEN '4 to 8'
-    WHEN trav_value = 5 THEN '8 to 16'
-    WHEN trav_value = 6 THEN '16 to 24'
-    WHEN trav_value = 7 THEN '24 to 36'
-    WHEN trav_value = 8 THEN '> 36'
+    WHEN trav_value = 1 THEN '0 to 30 minutes'
+    WHEN trav_value = 2 THEN '30 minutes to 1 hour'
+    WHEN trav_value = 3 THEN '1 to 2 hours'
+    WHEN trav_value = 4 THEN '2 to 4 hours'
+    WHEN trav_value = 5 THEN '4 to 8 hours'
+    WHEN trav_value = 6 THEN '8 to 16 hours'
+    WHEN trav_value = 7 THEN '16 to 32 hours'
+    WHEN trav_value = 8 THEN '> 32 hours'
     END;
 
 -- Re-optimization for future queries
 
-CREATE INDEX ${file%%.*}_adm2_dissolve_gix ON ${file%%.*}_adm2 USING GIST (geom);
+REINDEX INDEX ${file%%.*}_adm2_dissolve_gix;
 VACUUM ANALYZE ${file%%.*}_adm2_dissolve
 CLUSTER ${file%%.*}_adm2_dissolve USING ${file%%.*}_adm2_dissolve_gix;
 
