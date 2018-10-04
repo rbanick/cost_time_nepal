@@ -41,7 +41,7 @@ export GDAL_DATA=/usr/local/opt/gdal2/share/gdal/
 
 grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 binput=${file%%.*}_cats out=${file%%.*}_union operator=or
 
-# grass74 ~/grassdata/test/PERMANENT --exec g.remove type=vector name=${file%%.*}_cats -f
+# grass74 $GRASS_DB_LOC --exec g.remove type=vector name=${file%%.*}_cats -f
 
 grass74 $GRASS_DB_LOC --exec v.out.ogr input=${file%%.*}_union output=${file%%.*}_adm2.gpkg
 
