@@ -1,5 +1,7 @@
 #!/bin/bash
 
+chmod u+x master_lgu_pop_analysis.sh
+
 chart_export_path=$1
 
 for f in *.tif;
