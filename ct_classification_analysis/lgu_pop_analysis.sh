@@ -31,7 +31,7 @@ export GDAL_DATA=/usr/local/opt/gdal2/share/gdal/
 #
 # mkdir -p $GRASS_DB_LOC
 #
-# grass74 -c -e -text shp/NPL_Adm2_poly_sd_32644.shp "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec v.in.ogr input=shp/NPL_Adm2_poly_sd_32644.shp output=adm2
+# grass74 -c -e -text shp/NPL_Adm2_poly_sd_32644.shp $GRASS_DB_LOC --exec v.in.ogr input=shp/NPL_Adm2_poly_sd_32644.shp output=adm2
 #
 # grass74 $GRASS_DB_LOC --exec g.region -p
 #
