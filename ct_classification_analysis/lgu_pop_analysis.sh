@@ -27,22 +27,17 @@ export PYTHONPATH="$GISBASE/etc/python:$PYTHONPATH"
 export MANPATH=$MANPATH:$GISBASE/man
 export GDAL_DATA=/usr/local/opt/gdal2/share/gdal/
 
-# GRASS session variables
-#
-# GRASSDB="~/grassdata"
-# GRASS_DB_LOC="test"
-
 # GRASS commands
 #
-# mkdir -p "$GRASSDB/$GRASS_DB_LOC/PERMANENT"
+# mkdir -p $GRASS_DB_LOC
 #
 # grass74 -c -e -text shp/NPL_Adm2_poly_sd_32644.shp "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec v.in.ogr input=shp/NPL_Adm2_poly_sd_32644.shp output=adm2
 #
-# grass74 "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec g.region -p
+# grass74 $GRASS_DB_LOC --exec g.region -p
 #
-# grass74 "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec g.region vect=adm2
+# grass74 $GRASS_DB_LOC --exec g.region vect=adm2
 
-# grass74 ~/grassdata/test/PERMANENT --exec v.in.ogr input=${file%%.*}_cats.shp output=${file%%.*}_cats
+# grass74 $GRASS_DB_LOC --exec v.in.ogr input=${file%%.*}_cats.shp output=${file%%.*}_cats
 
 grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 binput=${file%%.*}_cats out=${file%%.*}_union operator=or
 
