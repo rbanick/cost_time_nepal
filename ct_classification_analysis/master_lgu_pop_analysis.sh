@@ -1,9 +1,8 @@
 #!/bin/bash
 
 file=$1
-chart_export_path=$2
-filename=${file%%.*}
-echo $filename
+
+echo "Analzying ${file%%.*}"
 
 ### gdal steps
 
@@ -19,35 +18,37 @@ echo "Vectorization complete"
 
 # path to GRASS binaries and libraries:
 
+export GRASS_DB_LOC=~/grassdata/test/PERMANENT
 export GISBASE=/usr/local/Cellar/grass7/7.4.0/grass-7.4.0
 export PATH=$PATH:$GISBASE/bin:$GISBASE/scripts
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GISBASE/lib
 export GRASS_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 export PYTHONPATH="$GISBASE/etc/python:$PYTHONPATH"
 export MANPATH=$MANPATH:$GISBASE/man
+export GDAL_DATA=/usr/local/opt/gdal2/share/gdal/
 
 # GRASS session variables
 #
-# GRASSDB=~"/grassdata"
-# GRASSLOC="test"
+# GRASSDB="~/grassdata"
+# GRASS_DB_LOC="test"
 
 # GRASS commands
 #
-# mkdir -p "$GRASSDB/$GRASSLOC/PERMANENT"
+# mkdir -p "$GRASSDB/$GRASS_DB_LOC/PERMANENT"
 #
-# grass74 -c -e -text shp/NPL_Adm2_poly_sd_32644.shp "$GRASSDB/$GRASSLOC/PERMANENT" --exec v.in.ogr input=shp/NPL_Adm2_poly_sd_32644.shp output=adm2
+# grass74 -c -e -text shp/NPL_Adm2_poly_sd_32644.shp "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec v.in.ogr input=shp/NPL_Adm2_poly_sd_32644.shp output=adm2
 #
-# grass74 "$GRASSDB/$GRASSLOC/PERMANENT" --exec g.region -p
+# grass74 "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec g.region -p
 #
-# grass74 "$GRASSDB/$GRASSLOC/PERMANENT" --exec g.region vect=adm2
+# grass74 "$GRASSDB/$GRASS_DB_LOC/PERMANENT" --exec g.region vect=adm2
 
-grass74 ~/grassdata/test/PERMANENT --exec v.in.ogr input=${file%%.*}_cats.shp output=${file%%.*}_cats
+# grass74 ~/grassdata/test/PERMANENT --exec v.in.ogr input=${file%%.*}_cats.shp output=${file%%.*}_cats
 
-grass74 ~/grassdata/test/PERMANENT --exec v.overlay ainput=adm2 binput=${file%%.*}_cats out=${file%%.*}_union operator=or
+grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 binput=${file%%.*}_cats out=${file%%.*}_union operator=or
 
 # grass74 ~/grassdata/test/PERMANENT --exec g.remove type=vector name=${file%%.*}_cats -f
 
-grass74 ~/grassdata/test/PERMANENT --exec v.out.ogr input=${file%%.*}_union output=${file%%.*}_adm2.gpkg
+grass74 $GRASS_DB_LOC --exec v.out.ogr input=${file%%.*}_union output=${file%%.*}_adm2.gpkg
 
 ### PostgreSQL steps
 
@@ -170,7 +171,9 @@ pgsql2shp -f ${file%%.*}_adm2_dissolve -h localhost -u robert poverty_analysis p
 
 ## Produce R charts
 
-Rscript R_LGU_181001.r ${file%%.*}_adm2_R.csv $chart_export_path
+mkdir ${file%%.*}_charts
+
+Rscript R_LGU_CT_Charts.r ${file%%.*}_adm2_R.csv ${file%%.*}_charts
 
 ## cleanup
 

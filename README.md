@@ -2,11 +2,13 @@
 
 A scripted routine for analyzing Cost Time accessibility rasters for various facility types in Nepal. These are prepared in a separate ArcGIS Model Builder environment.
 
-The script divides the rasters into zones, polygonizes them, aggregates the population for each and creates summary charts for every local government unit from the results.
+The Classification Analysis script divides the rasters into zones, polygonizes them, aggregates the population for each and creates summary charts for every local government unit from the results.
 
-The script involves a lot of moving parts. This is because QGIS and ArcGIS both crashed on the Union and Dissolve operations, which involve huge datasets. Thus GRASS and PostGIS are required. My system Python is scrambled at the moment so command line was preferred, although I would like to developt this into a Python script in the future.
+The Catchment Analysis script merges all the calculated facility catchment areas, subtracts them from administrative units, calculates the population uncovered per admin unit and returns a shapefile.
 
-This script is a work in progress with acknowledge flaws. There are inefficiencies and ugly workarounds for my problematic Python. Comments / PRs are always welcome.
+These scripts involve a lot of moving parts. This is because QGIS and ArcGIS both crashed on the Union and Dissolve operations, which involve huge datasets. Thus GRASS and PostGIS are required. My system Python is scrambled at the moment so command line was preferred, although I would like to develop this into a Python script in the future. In the shorter term I may consolidate around GRASS as I'm slowly figured out how to make it as responsive as PostGIS.
+
+This script is a work in progress with acknowledge flaws. There are inefficiencies and ugly workarounds for my problematic Python and partial GRASS knowledge. Comments / PRs are always welcome.
 
 ## Dependencies
 
@@ -47,15 +49,40 @@ R uses the following libraries, which should be installed ahead of time
 * grid
 * gridExtra
 
-## Using the script
+## Using the scripts
 
+### CT Classification Analysis
+*For a single file*
 From the Terminal run
 ```
-chmod u+x master_lgu_pop_analysis_181001.sh
-./master_lgu_pop_analysis_181001.sh /path/to/your_raster_file /path/to/your_chart_folder
+chmod u+x master_lgu_pop_analysis.sh
+./master_lgu_pop_analysis.sh /path/to/your_raster_file /path/to/your_chart_folder
 ```
 
-Name your raster carefully as this name will be recycled throughout the script and determine the output shapefile name.
+*For a folder of files*
+From the Terminal run
+```
+chmod u+x lgu_ct_batch.sh
+chmod u+x master_lgu_pop_analysis.sh
+./master_lgu_pop_analysis.sh /path/to/your_raster_file /path/to/your_chart_folder
+```
+
+Name your rasters carefully as their names will be recycled throughout the script and determine the output shapefile name.
+
+### Catchment Analysis
+*For a single file*
+From the Terminal run
+```
+chmod u+x catchment_analysis.sh
+./catchment_analysis.sh /path/to/catchment/shapefile/the_file.shp
+```
+
+*For a folder of files*
+From the Terminal run
+```
+chmod u+x lgu_catch_batch.sh
+./lgu_catch_batch.sh
+```
 
 ## Development plans
 
