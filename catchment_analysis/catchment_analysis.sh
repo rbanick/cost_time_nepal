@@ -17,10 +17,12 @@
 # Output chart 2: covered, by facility
 
 file=$1
+read time <<< $(echo $file | awk 'match($0, /(over)?[0-9]+(hr|min)/) {print substr($0,RSTART,RLENGTH)}')
+read type <<< $(echo $file | awk -F'[_]' '{print $1"_"$2}')
 
 # path to GRASS binaries and libraries:
 
-export GRASS_DB_LOC=~/grassdata/test/PERMANENT
+export GRASS_DB_LOC=/Volumes/TRANSCEND/GRASS
 export GISBASE=/usr/local/Cellar/grass7/7.4.0/grass-7.4.0
 export PATH=$PATH:$GISBASE/bin:$GISBASE/scripts
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GISBASE/lib
@@ -32,55 +34,100 @@ export GDAL_DATA=/usr/local/opt/gdal2/share/gdal/
 ## Grass
 
 # remove all previous files
-grass74 $GRASS_DB_LOC --exec g.remove name=${file%%.*}_cat type=vector -f
-grass74 $GRASS_DB_LOC --exec g.remove name=${file%%.*}_dissolve type=vector -f
-grass74 $GRASS_DB_LOC --exec g.remove name=${file%%.*}_subtract type=vector -f
-grass74 $GRASS_DB_LOC --exec g.remove name=${file%%.*}_subtract_dissolve type=vector -f
+
+rm ${file%%.*}.shp
+rm ${file%%.*}.dbf
+rm ${file%%.*}.shx
+rm ${file%%.*}.prj
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_clip type=all -f
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_cat type=all -f
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_dissolve type=all -f
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_adm2_subtract type=all -f
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_adm2_subtract_dissolve type=all -f
+
+# polygonize files
+
+python /Library/Frameworks/GDAL.framework/Programs/gdal_polygonize.py $file -f "ESRI Shapefile" ${file%%.*}.shp
 
 #import file in question
-grass74 $GRASS_DB_LOC --exec v.in.ogr input=$file output=${file%%.*} --overwrite
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.in.ogr input=${file%%.*}.shp output=${file%%.*} --overwrite
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.clip input=${file%%.*} clip=adm0 output=${file%%.*}_clip
 
 # adding a common background "category" that can be used to dissolve all the areas into one unit.
 
-grass74 $GRASS_DB_LOC --exec v.category input=${file%%.*} option=add layer=2 output=${file%%.*}_cat cat=1 step=0 --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.edit tool=delete map=${file%%.*}_clip where="DN='0'"
 
-grass74 $GRASS_DB_LOC --exec v.dissolve input=${file%%.*}_cat layer=2 output=${file%%.*}_dissolve --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.category input=${file%%.*}_clip option=add layer=2 output=${file%%.*}_cat cat=1 step=0 --overwrite
 
-# Then subtract the dissolved catchment polygon from the administrative coverage of the country to leave the area uncovered per admin unit (LGU)
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.dissolve input=${file%%.*}_cat layer=2 output=${file%%.*}_dissolve --overwrite
 
-grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 atype=area alayer=1 binput=${file%%.*}_dissolve btype=area blayer=2 out=${file%%.*}_subtract operator=not --overwrite
+# Then subtract the dissolved catchment polygon from the administrative coverage of the country to leave the area uncovered per admin unit LGU
 
-grass74 $GRASS_DB_LOC --exec v.dissolve input=${file%%.*}_subtract layer=1 output=${file%%.*}_subtract_dissolve col=a_HLCIT_CODE --overwrite
+### provinces
 
-grass74 $GRASS_DB_LOC --exec v.db.join map=${file%%.*}_subtract_dissolve column=a_HLCIT_CODE layer=1 other_table=adm2 other_col=HLCIT_CODE subset_columns=sum --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.overlay ainput=adm1 atype=area alayer=1 binput=${file%%.*}_dissolve btype=area blayer=2 out=${file%%.*}_adm1_subtract operator=not --overwrite
 
-# zonal statistics for population coverage, then calculating the relative percentage for each admin unit
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.dissolve input=${file%%.*}_adm1_subtract layer=1 output=${file%%.*}_adm1_subtract_dissolve col=a_STATE --overwrite
 
-grass74 $GRASS_DB_LOC --exec v.rast.stats map=${file%%.*}_subtract_dissolve layer=1 raster=wp_32644 column_prefix=catch_pop method=sum --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.join map=${file%%.*}_adm1_subtract_dissolve column=a_STATE layer=1 other_table=adm1 other_col=STATE subset_columns=pop_sum --overwrite
 
-grass74 $GRASS_DB_LOC --exec v.db.addcolumn map=${file%%.*}_subtract_dissolve layer=1 columns="pc_uncov double precision"
+### LGU
 
-grass74 $GRASS_DB_LOC --exec db.execute sql="UPDATE ${file%%.*}_subtract_dissolve SET pc_uncov=catch_pop_sum/sum"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.overlay ainput=adm2 atype=area alayer=1 binput=${file%%.*}_dissolve btype=area blayer=2 out=${file%%.*}_adm2_subtract operator=not --overwrite
 
-# export to a geopackage
-grass74 $GRASS_DB_LOC --exec v.out.ogr input=${file%%.*}_subtract_dissolve output=${file%%.*}_uncovered.gpkg --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.dissolve input=${file%%.*}_adm2_subtract layer=1 output=${file%%.*}_adm2_subtract_dissolve col=a_HLCIT_CODE --overwrite
 
-# grass can't merge non-adjacent polygons with a common ID to a singlepart geometry, so gdal's ogr2ogr tool has to be used for the final step
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.join map=${file%%.*}_adm2_subtract_dissolve column=a_HLCIT_CODE layer=1 other_table=adm2 other_col=HLCIT_CODE subset_columns=sum --overwrite
 
-ogr2ogr ${file%%.*}_final.shp ${file%%.*}_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(sum) as adm_pop, AVG(catch_pop_sum) as catch_pop, AVG(pc_uncov) as pc_uncov, a_HLCIT_CODE FROM ${file%%.*}_subtract_dissolve GROUP BY a_HLCIT_CODE" -f "ESRI Shapefile"
+# zonal statistics for catchment total and population coverage, then calculating the relative percentage for each admin unit
 
-# old
+### adm1
 
-# grass74 $GRASS_DB_LOC --exec g.remove name=hf_ctch_subtract_dissolve type=vector -f
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.rast.stats map=${file%%.*}_adm1_subtract_dissolve layer=1 raster=wp_32644 column_prefix=catch_pop_${time} method=sum --overwrite
 
-# grass74 $GRASS_DB_LOC --exec v.db.addtable map=hf_ctch_dissolve layer=1 columns="catch varchar"
-#
-# grass74 $GRASS_DB_LOC --exec v.db.update map=hf_ctch_dissolve layer=1 column=catch value="1"
-#
-# grass74 $GRASS_DB_LOC --exec v.edit tool=delete map=hf_ctch_union polygon=hf_ctch_dissolve
-#
-# grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 binput=${file%%.*}_dissolve out=${file%%.*}_union operator=or
-#
-# grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 binput=hf_ctch_dissolve out=hf_ctch_subtract operator=NOT
-#
-# grass74 $GRASS_DB_LOC --exec v.overlay ainput=adm2 binput=hf_ctch_dissolve blayer=2 out=hf_ctch_union2 operator=or --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.addcolumn map=${file%%.*}_adm1_subtract_dissolve layer=1 columns="pc_uncov_$time double precision"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.addcolumn map=${file%%.*}_adm1_subtract_dissolve layer=1 columns="trav_cat varchar"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.addcolumn map=${file%%.*}_adm1_subtract_dissolve layer=1 columns="type varchar"
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE ${file%%.*}_adm1_subtract_dissolve SET pc_uncov_$time=catch_pop_${time}_sum/pop_sum"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE ${file%%.*}_adm1_subtract_dissolve SET trav_cat='$time'"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE ${file%%.*}_adm1_subtract_dissolve SET type='$type'"
+
+### LGU
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.rast.stats map=${file%%.*}_adm2_subtract_dissolve layer=1 raster=wp_32644 column_prefix=catch_pop_$time method=sum --overwrite
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.addcolumn map=${file%%.*}_adm2_subtract_dissolve layer=1 columns="pc_uncov_$time double precision"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.addcolumn map=${file%%.*}_adm2_subtract_dissolve layer=1 columns="trav_cat varchar"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.db.addcolumn map=${file%%.*}_adm2_subtract_dissolve layer=1 columns="type varchar"
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE ${file%%.*}_adm2_subtract_dissolve SET pc_uncov_$time=catch_pop_${time}_sum/sum"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE ${file%%.*}_adm2_subtract_dissolve SET trav_cat='$time'"
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE ${file%%.*}_adm2_subtract_dissolve SET type='$type'"
+
+# export to geopackages
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.out.ogr input=${file%%.*}_adm1_subtract_dissolve output=output/${file%%.*}_adm1_uncovered.gpkg --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.out.ogr input=${file%%.*}_adm2_subtract_dissolve output=output/${file%%.*}_adm2_uncovered.gpkg --overwrite
+
+# grass can't merge non-adjacent polygons with a common ID to a singlepart geometry, so gdals ogr2ogr tool has to be used for the final step
+
+mkdir ./output/$type
+
+ogr2ogr ./output/$type/${file%%.*}_adm1_final.gpkg ./output/$type/${file%%.*}_adm1_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(pop_sum) as adm_pop, AVG(catch_pop_${time}_sum) as catch_pop_$time, AVG(pc_uncov_$time) as pc_uncov_$time, a_STATE FROM ${file%%.*}_adm1_subtract_dissolve GROUP BY a_STATE" -f "GPKG"
+ogr2ogr ./output/$type/${file%%.*}_adm2_final.gpkg ./output/$type/${file%%.*}_adm2_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(sum) as adm_pop, AVG(catch_pop_${time}_sum) as catch_pop_$time, AVG(pc_uncov_$time) as pc_uncov_$time, a_HLCIT_CODE FROM ${file%%.*}_adm2_subtract_dissolve GROUP BY a_HLCIT_CODE" -f "GPKG"
+
+ogr2ogr -f "CSV" ./output/$type/${file%%.*}_adm1_final.csv ./output/$type/${file%%.*}_adm1_final.gpkg
+ogr2ogr -f "CSV" ./output/$type/${file%%.*}_adm2_final.csv ./output/$type/${file%%.*}_adm2_final.gpkg
+
+cp csv_merge.r ./$type/csv_merge.r
+cp LU_names.csv ./$type/LU_names.csv
+
+## fun facts about GRASS!
+
+### on import of the World Pop layer wp_32644, you need to set it to the same region as your vector files -- g.region vector=adm2 align=wp_32644
+### grass will show things as multipart polygons on QGIS but actually they're single part when running geoprocessing routines
+###

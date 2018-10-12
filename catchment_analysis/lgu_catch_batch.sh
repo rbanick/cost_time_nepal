@@ -2,9 +2,7 @@
 
 chmod u+x catchment_analysis.sh
 
-chart_export_path=$1
-
-for f in *.shp;
+for f in *.tif;
 
 do bash catchment_analysis.sh $f;
 
