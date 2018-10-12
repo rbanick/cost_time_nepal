@@ -26,12 +26,11 @@ type = basename(fullpath)
 
 ## listing, merging, cleaning data
 
-read.csv(lgu_names,"LGU_names.csv",header=TRUE)
-lgu_names <- lgu_names %<% select(a_HLCIT_CODE,LU_Name,TYPE_EN,LU_TYPE)
+lgu_names <- read.csv("LGU_names.csv",header=TRUE)
 file_list=list.files(pattern="*.csv")
 
 adm1_list <- grep("adm1",file_list,value=TRUE)
-adm1_list <- grep("adm1",file_list,value=TRUE)
+adm2_list <- grep("adm2",file_list,value=TRUE)
 
 adm1_data <- lapply(adm1_list,read.csv)
 adm2_data <- lapply(adm2_list,read.csv)
