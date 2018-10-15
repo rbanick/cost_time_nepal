@@ -4,7 +4,8 @@ file=$1
 
 echo "Analzying ${file%%.*}"
 
-read type <<< $(echo $file | awk -F'[_]' '{print $1"_"$2}')
+read type <<< $(echo ${file%%.*} | awk -F'[_]' '{print $1"_"$2}')
+echo $type
 
 ### gdal steps
 
@@ -253,15 +254,15 @@ psql -h localhost -d poverty_analysis -f $sqlfile_popcalcs;
 
 ## export resulting shapefiles
 
-pgsql2shp -f ${file%%.*}_adm2_dissolve -h localhost -u robert poverty_analysis public.${file%%.*}_adm1_dissolve;
+pgsql2shp -f ${file%%.*}_adm1_dissolve -h localhost -u robert poverty_analysis public.${file%%.*}_adm1_dissolve;
 pgsql2shp -f ${file%%.*}_adm2_dissolve -h localhost -u robert poverty_analysis public.${file%%.*}_adm2_dissolve;
 
 ## Produce R charts
 
 mkdir ${type}_charts
 
-# Rscript R_CT_Adm1_Charts.r ${file%%.*}_adm1.csv ${type}_charts ${type}
-# Rscript R_CT_Adm2_Charts.r ${file%%.*}_adm2.csv ${type}_charts ${type}
+Rscript R_CT_Adm1_Charts.r ${file%%.*}_adm1.csv ${type}_charts ${type}
+Rscript R_CT_Adm2_Charts.r ${file%%.*}_adm2.csv ${type}_charts ${type}
 
 ## cleanup
 
