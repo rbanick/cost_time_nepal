@@ -40,7 +40,7 @@ rm ${file%%.*}.dbf
 rm ${file%%.*}.shx
 rm ${file%%.*}.prj
 
-grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_clip type=all -f
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT -f --exec g.remove name=${file%%.*}_clip type=all -f
 grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_cat type=all -f
 grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_dissolve type=all -f
 grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec g.remove name=${file%%.*}_adm2_subtract type=all -f
@@ -110,21 +110,21 @@ grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec db.execute sql="UPDATE $
 
 # export to geopackages
 
-grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.out.ogr input=${file%%.*}_adm1_subtract_dissolve output=output/${file%%.*}_adm1_uncovered.gpkg --overwrite
-grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.out.ogr input=${file%%.*}_adm2_subtract_dissolve output=output/${file%%.*}_adm2_uncovered.gpkg --overwrite
+mkdir ./$type
+
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.out.ogr input=${file%%.*}_adm1_subtract_dissolve output=./$type/${file%%.*}_adm1_uncovered.gpkg --overwrite
+grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.out.ogr input=${file%%.*}_adm2_subtract_dissolve output=./$type/${file%%.*}_adm2_uncovered.gpkg --overwrite
 
 # grass can't merge non-adjacent polygons with a common ID to a singlepart geometry, so gdals ogr2ogr tool has to be used for the final step
 
-mkdir ./output/$type
+ogr2ogr ./$type/${file%%.*}_adm1_final.gpkg ./$type/${file%%.*}_adm1_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(pop_sum) as adm_pop, AVG(catch_pop_${time}_sum) as catch_pop_$time, AVG(pc_uncov_$time) as pc_uncov_$time, a_STATE FROM ${file%%.*}_adm1_subtract_dissolve GROUP BY a_STATE" -f "GPKG"
+ogr2ogr ./$type/${file%%.*}_adm2_final.gpkg ./$type/${file%%.*}_adm2_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(sum) as adm_pop, AVG(catch_pop_${time}_sum) as catch_pop_$time, AVG(pc_uncov_$time) as pc_uncov_$time, a_HLCIT_CODE FROM ${file%%.*}_adm2_subtract_dissolve GROUP BY a_HLCIT_CODE" -f "GPKG"
 
-ogr2ogr ./output/$type/${file%%.*}_adm1_final.gpkg ./output/$type/${file%%.*}_adm1_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(pop_sum) as adm_pop, AVG(catch_pop_${time}_sum) as catch_pop_$time, AVG(pc_uncov_$time) as pc_uncov_$time, a_STATE FROM ${file%%.*}_adm1_subtract_dissolve GROUP BY a_STATE" -f "GPKG"
-ogr2ogr ./output/$type/${file%%.*}_adm2_final.gpkg ./output/$type/${file%%.*}_adm2_uncovered.gpkg -dialect sqlite -sql "SELECT ST_Union(geom) AS geom, AVG(sum) as adm_pop, AVG(catch_pop_${time}_sum) as catch_pop_$time, AVG(pc_uncov_$time) as pc_uncov_$time, a_HLCIT_CODE FROM ${file%%.*}_adm2_subtract_dissolve GROUP BY a_HLCIT_CODE" -f "GPKG"
-
-ogr2ogr -f "CSV" ./output/$type/${file%%.*}_adm1_final.csv ./output/$type/${file%%.*}_adm1_final.gpkg
-ogr2ogr -f "CSV" ./output/$type/${file%%.*}_adm2_final.csv ./output/$type/${file%%.*}_adm2_final.gpkg
+ogr2ogr -f "CSV" ./$type/${file%%.*}_adm1_final.csv ./$type/${file%%.*}_adm1_final.gpkg
+ogr2ogr -f "CSV" ./$type/${file%%.*}_adm2_final.csv ./$type/${file%%.*}_adm2_final.gpkg
 
 cp csv_merge.r ./$type/csv_merge.r
-cp LU_names.csv ./$type/LU_names.csv
+cp LGU_names.csv ./$type/LU_names.csv
 
 ## fun facts about GRASS!
 
