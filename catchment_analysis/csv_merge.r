@@ -6,13 +6,13 @@ library.path <- .libPaths()
 print(library.path)
 
 
+library("plyr",lib.loc=library.path)
 library("dplyr", lib.loc = library.path)
 library("reshape2", lib.loc = library.path)
 library("forcats", lib.loc = library.path)
 library("stringr", lib.loc = library.path)
 library("batch", lib.loc=library.path)
 library("purrr",lib.loc=library.path)
-library("plyr",lib.loc=library.path)
 
 # loadfonts()
 
