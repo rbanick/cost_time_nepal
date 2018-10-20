@@ -43,8 +43,6 @@ grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT --exec v.overlay ainput=adm2 bi
 
 # # # grass74 $GRASS_DB_LOC --exec g.remove `type`=vector name=${file%%.*}_cats -f
 
-# grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT -f --exec v.out.ogr input=${file%%.*}_adm1_union output=${file%%.*}_adm1.gpkg format=GPKG --overwrite
-#
 grass74 /Volumes/TRANSCEND/GRASS/nepal/PERMANENT -f --exec v.out.ogr input=${file%%.*}_adm2_union output=${file%%.*}_adm2.gpkg format=GPKG --overwrite
 
 ### PostgreSQL steps
@@ -184,7 +182,6 @@ pgsql2shp -f ${type}/${file%%.*}_adm2_dissolve -h localhost -u robert poverty_an
 
 mkdir ${type}/charts
 
-# Rscript R_CT_Adm1_Charts.r ${type}/${file%%.*}_adm1.csv ${type}/charts ${type}
 Rscript R_CT_Adm2_Charts.r ${type}/${file%%.*}_adm2.csv ${type}/charts ${type}
 
 ## cleanup
