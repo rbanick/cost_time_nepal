@@ -51,25 +51,25 @@ R uses the following libraries, which should be installed ahead of time
 
 ## Using the scripts
 
-### CT Classification Analysis
+### Isochrone (travel classification) analysis
 *For a single file*
 From the Terminal run
 ```
-chmod u+x master_lgu_pop_analysis.sh
-./master_lgu_pop_analysis.sh /path/to/your_raster_file /path/to/your_chart_folder
+chmod u+x adm1_pop_analysis.sh
+./adm1_pop_analysis.sh /path/to/your_raster_file /path/to/your_chart_folder
 ```
 
 *For a folder of files*
 From the Terminal run
 ```
-chmod u+x lgu_ct_batch.sh
-chmod u+x master_lgu_pop_analysis.sh
+chmod u+x all_ct_batch.sh
+chmod u+x adm1_pop_analysis.sh
 ./master_lgu_pop_analysis.sh /path/to/your_raster_file /path/to/your_chart_folder
 ```
 
 Name your rasters carefully as their names will be recycled throughout the script and determine the output shapefile name.
 
-### Catchment Analysis
+### Facility catchment analysis
 *For a single file*
 From the Terminal run
 ```
@@ -88,7 +88,7 @@ chmod u+x lgu_catch_batch.sh
 
 This will be developed into a batch script shortly for easy analysis of bundles of raster files
 
-Eventually this will be integrated with a Python script for accessibiliy map production via QGIS's Atlas function.
+Eventually this will be integrated with a Python script for accessibility map production via QGIS's Atlas function.
 
 I would like to develop this into a cleaner Python script but don't have the time at the moment.
 
