@@ -8,6 +8,7 @@ print(library.path)
 
 library("ggplot2", lib.loc = library.path)
 library("scales", lib.loc = library.path)
+library("stringr", lib.loc = library.path)
 library("extrafont", lib.loc = library.path)
 library("dplyr", lib.loc = library.path)
 library("reshape2", lib.loc = library.path)
@@ -16,15 +17,23 @@ library("quantmod", lib.loc = library.path)
 library("directlabels", lib.loc = library.path)
 library("grid", lib.loc = library.path)
 library("gridExtra", lib.loc = library.path)
-# loadfonts()
 
 ## batch scripting setup
 
 setwd(".") # setwd to read in file
 args <- commandArgs(TRUE)
 adm1_input <- read.csv(args[1], header=TRUE)
-export_directory <- args[2]
-type <- args[3]
+season <- str_extract(args[1],"[^_]*")
+type <- str_extract(args[1],"(?<=_).*(?=_)")
+print(season)
+print(type)
+# charts_folder <- args[2]
+
+### exporting
+
+export_directory=paste("../Charts/",season,"/",type,sep="")
+print(export_directory)
+dir.create(file.path(export_directory),showWarnings=FALSE)
 
 ## revise data
 
@@ -34,53 +43,59 @@ adm1_input_slim$cat_pop <- prettyNum(round(adm1_input_slim$cat_pop,digits=0),big
 adm1_input_slim$pc_pop <- adm1_input_slim$pc_pop # make population round with commas
 adm1_input_slim$pc_pop <- round(adm1_input_slim$pc_pop,digits=4) # make population round with commas
 adm1_input_slim$trav_value <- as.factor(adm1_input_slim$trav_value)
-adm1_input_slim[order(adm1_input_slim$adm_code,adm1_input_slim$trav_cat),]
 adm1_order <- adm1_input_slim[order(adm1_input_slim$adm_code,adm1_input_slim$trav_cat),]
 
-## define color palette variablesadm1_list=list()
+## define color palette variablesprov_list=list()
 
 cols <- c("1" = 'darkgreen', "2" = '#2ab72e', "3" = 'lightgreen', "4" = '#e3eb96', "5" = '#f4f007', "6" = '#FECC42', "7" = '#f96a34', "8" = "red")
+
+
 ## charts setup
 
-setwd(export_directory) # setwd to exports charts to
+# setwd(export_directory) # setwd to exports charts to
 
-## loop adm1 charts
+## loop lgu charts
 
-adm1_list=list()
+prov_list=list()
 
 for (i in unique(adm1_order$adm_code)) {
 
   adm1_filter <- filter(adm1_order, adm_code == i)
 
+  title=paste("Province ",adm1_filter$adm_name,sep="")
+  subtitle=paste("Population",prettyNum(adm1_filter$adm_pop,big.mark = ",",scientific=FALSE,digits=0))
+
   plot <- ggplot(adm1_filter, aes(x = trav_cat, y = pc_pop, fill = trav_value)) +
     geom_text(aes(label=paste((pc_pop*100),"%\n",cat_pop," persons",sep="")),hjust=-0.1,size=2.5) +
-    # ggtitle(adm1_filter$ADM_NAME) +
-    theme(axis.text.y = element_text(angle=45, hjust=1),panel.grid.major.x = element_line(color="#ffffff", size=0.15,lineend="round"),panel.grid.major.y = element_blank(),legend.position="none") +
+    ggtitle(title,subtitle) +
+    theme(axis.text.y = element_text(angle=45, hjust=1),axis.title.y=element_blank(),panel.grid.major.x = element_line(color="#ffffff", size=0.15,lineend="round"),panel.grid.major.y = element_blank(),legend.position="none",plot.title=element_text(size=12,hjust=0.975,margin=margin(b=0)),plot.subtitle=element_text(size=8,hjust=0.975,margin=margin(b=-22))) +
     scale_y_continuous(limits=c(0,1),labels = scales::percent) +
-    ylab("% of province population") +
-    xlab("Travel time to nearest facility") +
+    ylab("% of provincial population") +
+    # xlab("Travel time to nearest facility") +
     stat_summary(fun.y="identity",geom="bar") +
     scale_fill_manual(values= cols) +
     coord_flip()
 
-  filename=paste("./",export_directory,"/","Province ",adm1_filter$adm_name," - ",type,".pdf",sep="")
+  filename=paste("./",export_directory,"/","Province ",adm1_filter$adm_name," - ",season,"_",type,".pdf",sep="")
 
-  adm1_list[[i]] = plot
+  prov_list[[i]] = plot
 
 }
 
-print("done with plots")
+print("done with plotting")
 
 
-## province print loop
+## LGU print loop
 
-for (i in unique(adm1_order$adm_code)) { # Another for loop, this time to save out the bar charts in adm1_list as PDFs
+for (i in unique(adm1_order$adm_code)) { # Another for loop, this time to save out the bar charts in prov_list as PDFs
     adm1_filter <- filter(adm1_order, adm_code == i)
-    filename=paste("Province ",adm1_filter$adm_name," - ",type,".jpeg",sep="") # Make the file name for each PDF. The paste makes the name a variable of the admin, so each chart is named by province and code
+    filename=paste("Province ",adm1_filter$adm_name," - ",season,"_",type,".jpeg",sep="") # Make the file name for each PDF. The paste makes the name a variable of the admin, so each chart is named by LGU and code
 
     jpeg(filename,width=3.5,height=4,units="in",bg="white",quality=1,res=300,type=c("quartz")) # jpeg basic specifications. Modify the width and height here.
 
-    print(adm1_list[[i]])
+    print(prov_list[[i]])
 
     dev.off()
 }
+
+print("done with printing")
